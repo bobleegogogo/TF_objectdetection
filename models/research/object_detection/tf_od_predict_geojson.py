@@ -15,6 +15,7 @@ import glob
 import six.moves.urllib as urllib
 import tensorflow as tf
 import tarfile
+from tqdm import tqdm
 
 
 from io import StringIO
@@ -92,7 +93,7 @@ def tf_od_pred():
             #for the prediction bbox id
             prediction_id = []
 	
-            for image_path in test_imgs:
+            for image_path in tqdm(test_imgs):
                 image = Image.open(image_path)
                 image_np = load_image_into_numpy_array(image)
                 # the array based representation of the image will be used later in order to prepare the
@@ -118,7 +119,7 @@ def tf_od_pred():
                 with tf.gfile.Open(image_path, 'w') as fid:
                      image_pil.save(fid, 'PNG')
                 
-                M = tf.image.non_max_suppression(np.squeeze(boxes), np.squeeze(scores), 20, iou_threshold=0.5)
+                M = tf.image.non_max_suppression(np.squeeze(boxes), np.squeeze(scores), boxes.shape[1], iou_threshold=0.3)
                 M = M.eval()
                 task = os.path.splitext(os.path.basename(image_path))[0]
                 scores = np.squeeze(((scores*100).transpose()).astype(np.int))
@@ -179,7 +180,7 @@ if __name__ =='__main__':
     num_classes = 1
     #Directory to test images path
     test_image_path = op.join(os.getcwd(), FLAGS.test_image_path)
-    test_imgs = glob.glob(test_image_path + "/*.jpg")
+    test_imgs = glob.glob(test_image_path + "/*.png")
 
     ############
     #Load the frozen tensorflow model
@@ -200,3 +201,4 @@ if __name__ =='__main__':
     categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=num_classes, use_display_name=True)
     category_index = label_map_util.create_category_index(categories)
     tf_od_pred()
+
